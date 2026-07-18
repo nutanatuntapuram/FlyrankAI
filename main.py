@@ -3,7 +3,11 @@ from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 from typing import Optional
 
-app = FastAPI()
+app = FastAPI(
+    title="Task API",
+    description="A simple CRUD API for managing tasks.",
+    version="1.0"
+)
 
 tasks = [
     {"id": 1, "title": "Buy groceries", "done": False},
@@ -19,7 +23,7 @@ class TaskUpdate(BaseModel):
     done: Optional[bool] = None
 
 
-@app.get("/")
+@app.get("/", summary="API info", description="Returns basic information about this API.")
 def read_root():
     return {
         "name": "Task API",
@@ -28,17 +32,17 @@ def read_root():
     }
 
 
-@app.get("/health")
+@app.get("/health", summary="Health check", description="Returns OK if the server is running.")
 def health_check():
     return {"status": "ok"}
 
 
-@app.get("/tasks")
+@app.get("/tasks", summary="List all tasks", description="Returns the full list of tasks.")
 def get_tasks():
     return tasks
 
 
-@app.get("/tasks/{task_id}")
+@app.get("/tasks/{task_id}", summary="Get a single task", description="Returns one task by its id, or 404 if it doesn't exist.")
 def get_task(task_id: int):
     for task in tasks:
         if task["id"] == task_id:
@@ -49,7 +53,7 @@ def get_task(task_id: int):
     )
 
 
-@app.post("/tasks")
+@app.post("/tasks", summary="Create a task", description="Creates a new task. Requires a non-empty title.", status_code=201)
 def create_task(task: TaskCreate):
     if not task.title or not task.title.strip():
         return JSONResponse(
@@ -64,9 +68,8 @@ def create_task(task: TaskCreate):
     return JSONResponse(status_code=201, content=new_task)
 
 
-@app.put("/tasks/{task_id}")
+@app.put("/tasks/{task_id}", summary="Update a task", description="Updates a task's title and/or done status. Returns 404 if the task doesn't exist.")
 def update_task(task_id: int, task: TaskUpdate):
-    # Find the task
     existing = None
     for t in tasks:
         if t["id"] == task_id:
@@ -79,21 +82,18 @@ def update_task(task_id: int, task: TaskUpdate):
             content={"error": f"Task {task_id} not found"}
         )
 
-    # Validate: if title is provided, it can't be empty/whitespace
     if task.title is not None and not task.title.strip():
         return JSONResponse(
             status_code=400,
             content={"error": "Title cannot be empty"}
         )
 
-    # Reject if body had nothing usable at all
     if task.title is None and task.done is None:
         return JSONResponse(
             status_code=400,
             content={"error": "Provide at least a title or done field to update"}
         )
 
-    # Apply updates
     if task.title is not None:
         existing["title"] = task.title
     if task.done is not None:
@@ -102,7 +102,7 @@ def update_task(task_id: int, task: TaskUpdate):
     return existing
 
 
-@app.delete("/tasks/{task_id}")
+@app.delete("/tasks/{task_id}", summary="Delete a task", description="Deletes a task by id. Returns 204 with no body on success, or 404 if not found.")
 def delete_task(task_id: int):
     for i, t in enumerate(tasks):
         if t["id"] == task_id:
