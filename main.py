@@ -4,6 +4,9 @@ from pydantic import BaseModel
 from typing import Optional
 
 from postgres_repository import PostgresTaskRepository
+from supabase_client import supabase
+
+print("Server running and connected to Supabase")
 
 app = FastAPI(
     title="Task API",
